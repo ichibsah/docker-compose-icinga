@@ -170,5 +170,5 @@ services:
 
 volumes:
   icinga2:
-  icingaweb:
-  mysql:
+  icingaweb: 
+  mysql: 
