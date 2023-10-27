@@ -89,9 +89,14 @@ services:
     entrypoint: []
     logging: *default-logging
     image: icinga/icingaweb2
-    restart: on-failure
+    #restart: on-failure
     volumes:
       - icingaweb:/data
+#
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]    
 
   # The Icinga 2 docker image does not support configuration via env vars at the moment.
   # So, we have to ship some configs with this little init container. Referenced in depends_on of the icinga2 service.
@@ -105,6 +110,11 @@ services:
       - ./icingadb.conf:/config/icingadb.conf
       - ./icingaweb-api-user.conf:/config/icingaweb-api-user.conf
       - ./init-icinga2.sh:/config/init-icinga2.sh
+#
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
 
   icinga2:
     command: [ "sh", "-c", "sleep 5 ; icinga2 daemon" ]
@@ -119,6 +129,11 @@ services:
     volumes:
       - icinga2:/data
       - ./icinga2.conf.d:/custom_data/custom.conf.d
+#
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
 
   icingadb:
     environment:
@@ -134,10 +149,21 @@ services:
       - icingadb-redis
     image: icinga/icingadb
     logging: *default-logging
+#
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
 
   icingadb-redis:
     image: redis
     logging: *default-logging
+#
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
 
   icingaweb:
     depends_on:
@@ -151,9 +177,14 @@ services:
       - 8080:8080
     # Restart Icinga Web container automatically since we have to wait for the database to be ready.
     # Please note that this needs a more sophisticated solution.
-    restart: on-failure
+    #restart: on-failure
     volumes:
       - icingaweb:/data
+#
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
 
   mysql:
     image: mariadb:10.7
@@ -167,6 +198,12 @@ services:
     volumes:
       - mysql:/var/lib/mysql
       - ./env/mysql/:/docker-entrypoint-initdb.d/
+#
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
 
 volumes:
   icinga2:
@@ -175,3 +212,4 @@ volumes:
 
 
 # $ docker-compose -p icinga-playground up -d
+# $ docker stack deploy -c icinga-stack.yml icinga
